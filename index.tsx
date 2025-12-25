@@ -29,13 +29,18 @@ import {
   UploadCloud,
   CheckCircle2,
   Circle,
-  Clock
+  Clock,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Smile
 } from 'lucide-react';
 
-// --- Constants ---
+// --- 常量定义 ---
 const LOW_BALANCE_THRESHOLD = 5;
 
-// --- Types ---
+// --- 类型定义 ---
 
 interface LessonLog {
   id: string;
@@ -59,7 +64,7 @@ interface Review {
 interface ArchiveImage {
   id: string;
   studentId: string;
-  url: string; // Base64 for local storage demo
+  url: string; // 本地存储演示使用 Base64
   name: string;
   date: number;
 }
@@ -73,9 +78,32 @@ interface Student {
   joinDate: number;
 }
 
-// --- App Component ---
+// --- 品牌组件 ---
+
+const AppLogo = ({ showText = true, className = "" }: { showText?: boolean, className?: string }) => (
+  <div className={`flex items-center gap-3 ${className}`}>
+    <div className="relative group">
+      <div className="bg-yellow-400 p-1.5 rounded-full shadow-lg border-2 border-slate-900 transition-transform group-hover:scale-110">
+        <Smile size={28} className="text-slate-900 fill-yellow-400" strokeWidth={2.5} />
+      </div>
+    </div>
+    {showText && (
+      <div className="flex flex-col leading-none">
+        <span className="text-xl font-black text-slate-900 tracking-tight">乐贝色彩</span>
+        <span className="text-[9px] font-bold text-slate-500 tracking-[0.2em] uppercase">笑脸艺术中心</span>
+      </div>
+    )}
+  </div>
+);
+
+// --- 应用程序主组件 ---
 
 const App = () => {
+  // 身份验证状态
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('edu_auth') === 'true';
+  });
+
   const [students, setStudents] = useState<Student[]>(() => {
     const saved = localStorage.getItem('edu_students');
     return saved ? JSON.parse(saved) : [];
@@ -102,7 +130,7 @@ const App = () => {
   const [reviewingStudent, setReviewingStudent] = useState<Student | null>(null);
   const [archivingStudent, setArchivingStudent] = useState<Student | null>(null);
 
-  // Sync with LocalStorage
+  // 与本地存储同步
   useEffect(() => {
     localStorage.setItem('edu_students', JSON.stringify(students));
   }, [students]);
@@ -119,7 +147,15 @@ const App = () => {
     localStorage.setItem('edu_archives', JSON.stringify(archives));
   }, [archives]);
 
-  // Actions
+  // 登出处理
+  const handleLogout = () => {
+    if (confirm('确定要退出登录吗？')) {
+      sessionStorage.removeItem('edu_auth');
+      setIsAuthenticated(false);
+    }
+  };
+
+  // 学员操作
   const addStudent = (name: string, phone: string, initialLessons: number) => {
     const newStudent: Student = {
       id: Math.random().toString(36).substr(2, 9),
@@ -155,8 +191,6 @@ const App = () => {
   };
 
   const addArchiveImages = (studentId: string, imageFiles: File[]) => {
-    const newImages: ArchiveImage[] = [];
-    
     imageFiles.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -212,19 +246,19 @@ const App = () => {
     setLogs([newLog, ...logs]);
   };
 
-  // Filtered Data
+  // 过滤后的学员数据
   const filteredStudents = useMemo(() => {
     return students.filter(s => 
       s.name.includes(searchTerm) || s.phone.includes(searchTerm)
     );
   }, [students, searchTerm]);
 
-  // Low balance students
+  // 课时余额不足的学员
   const lowBalanceStudents = useMemo(() => {
     return students.filter(s => s.remainingLessons < LOW_BALANCE_THRESHOLD);
   }, [students]);
 
-  // Statistics
+  // 数据统计
   const stats = useMemo(() => ({
     totalStudents: students.length,
     totalRemaining: students.reduce((acc, s) => acc + s.remainingLessons, 0),
@@ -235,19 +269,20 @@ const App = () => {
     lowBalanceCount: lowBalanceStudents.length,
   }), [students, logs, lowBalanceStudents]);
 
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
+  }
+
   return (
-    <div className="min-h-screen pb-20 md:pb-0 md:pl-64 flex flex-col bg-slate-50">
+    <div className="min-h-screen pb-20 md:pb-0 md:pl-64 flex flex-col bg-slate-50 animate-in fade-in duration-500">
       
-      {/* --- Sidebar (Desktop) --- */}
+      {/* --- 侧边栏 (桌面端) --- */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 p-6">
-        <div className="flex items-center gap-3 mb-10">
-          <div className="bg-blue-600 p-2 rounded-xl">
-            <BookOpen className="text-white w-6 h-6" />
-          </div>
-          <h1 className="text-xl font-bold text-slate-800">乐贝色彩</h1>
+        <div className="mb-10 pl-2">
+          <AppLogo />
         </div>
         
-        <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col gap-2 flex-1">
           <NavItem 
             active={activeTab === 'dashboard'} 
             onClick={() => setActiveTab('dashboard')} 
@@ -268,9 +303,17 @@ const App = () => {
             label="收支明细" 
           />
         </nav>
+
+        <button 
+          onClick={handleLogout}
+          className="mt-auto flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition font-medium"
+        >
+          <LogOut size={20} />
+          <span>退出登录</span>
+        </button>
       </aside>
 
-      {/* --- Bottom Nav (Mobile) --- */}
+      {/* --- 底部导航 (移动端) --- */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-3 z-50">
         <MobileNavItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={24} />} label="首页" />
         <MobileNavItem 
@@ -281,28 +324,29 @@ const App = () => {
           badge={stats.lowBalanceCount > 0 ? stats.lowBalanceCount : undefined}
         />
         <MobileNavItem active={activeTab === 'history'} onClick={() => setActiveTab('history')} icon={<History size={24} />} label="明细" />
+        <MobileNavItem active={false} onClick={handleLogout} icon={<LogOut size={24} />} label="退出" />
       </nav>
 
-      {/* --- Main Content --- */}
+      {/* --- 主要内容区 --- */}
       <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full">
         
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             <header className="flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-slate-800">乐贝色彩</h2>
-                <p className="text-slate-500 text-sm">今天又是充满活力的一天</p>
+                <h2 className="text-2xl font-bold text-slate-800">管理看板</h2>
+                <p className="text-slate-500 text-sm">你好，管理员！今天也要开心哦</p>
               </div>
               <button 
                 onClick={() => setIsAddingStudent(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition shadow-md shadow-blue-100"
+                className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-slate-800 transition shadow-md shadow-slate-100"
               >
                 <UserPlus size={18} />
                 <span>新增学员</span>
               </button>
             </header>
 
-            {/* Stats Cards */}
+            {/* 统计卡片 */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard icon={<Users className="text-blue-600" />} label="总学员" value={stats.totalStudents} color="blue" />
               <StatCard icon={<BookOpen className="text-emerald-600" />} label="剩余总课时" value={stats.totalRemaining} color="emerald" />
@@ -316,7 +360,7 @@ const App = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Low Balance Alert List */}
+              {/* 待续费名单 */}
               <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 ring-1 ring-red-50">
                 <h3 className="text-lg font-semibold mb-4 text-slate-800 flex items-center gap-2">
                   <AlertTriangle className="text-red-500" size={20} /> 待续费名单
@@ -354,7 +398,7 @@ const App = () => {
                 </div>
               </div>
 
-              {/* Quick Actions */}
+              {/* 最近记录 */}
               <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <h3 className="text-lg font-semibold mb-4 text-slate-800 flex items-center gap-2">
                   <History className="text-blue-500" size={20} /> 最近交易记录
@@ -380,7 +424,7 @@ const App = () => {
                 </div>
               </div>
 
-              {/* Latest Reviews */}
+              {/* 最新点评 */}
               <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <h3 className="text-lg font-semibold mb-4 text-slate-800 flex items-center gap-2">
                   <Award className="text-amber-500" size={20} /> 最新学员点评
@@ -594,7 +638,7 @@ const App = () => {
         )}
       </main>
 
-      {/* --- Modals --- */}
+      {/* --- 弹窗组件 --- */}
       {isAddingStudent && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl">
@@ -633,7 +677,7 @@ const App = () => {
                 </button>
                 <button 
                   type="submit" 
-                  className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-lg shadow-blue-200"
+                  className="flex-1 py-3 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 shadow-lg shadow-slate-200"
                 >
                   确认添加
                 </button>
@@ -643,7 +687,7 @@ const App = () => {
         </div>
       )}
 
-      {/* Review Modal */}
+      {/* 评价弹窗 */}
       {reviewingStudent && (
         <ReviewModal 
           student={reviewingStudent} 
@@ -653,7 +697,7 @@ const App = () => {
         />
       )}
 
-      {/* Archive Modal */}
+      {/* 成长档案弹窗 */}
       {archivingStudent && (
         <ArchiveModal 
           student={archivingStudent}
@@ -667,7 +711,124 @@ const App = () => {
   );
 };
 
-// --- Helper Components ---
+// --- 登录页面组件 ---
+
+const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSettingInitial, setIsSettingInitial] = useState(() => !localStorage.getItem('edu_admin_password'));
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSettingInitial) {
+      if (password.length < 6) {
+        alert('密码长度至少需要6位');
+        return;
+      }
+      localStorage.setItem('edu_admin_password', password);
+      sessionStorage.setItem('edu_auth', 'true');
+      onLogin();
+    } else {
+      const savedPassword = localStorage.getItem('edu_admin_password');
+      if (password === savedPassword) {
+        sessionStorage.setItem('edu_auth', 'true');
+        onLogin();
+      } else {
+        setError(true);
+        setTimeout(() => setError(false), 500);
+      }
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 relative overflow-hidden">
+      {/* 动态背景图案 */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-[0.03]">
+        <div className="grid grid-cols-12 gap-4">
+          {[...Array(144)].map((_, i) => (
+            <Smile key={i} size={48} className="text-slate-900" />
+          ))}
+        </div>
+      </div>
+
+      <div className={`bg-white/90 backdrop-blur-2xl p-8 md:p-12 rounded-[48px] w-full max-w-md shadow-[0_32px_64px_-12px_rgba(0,0,0,0.1)] relative z-10 transition-transform duration-300 ${error ? 'animate-shake' : ''} border border-white`}>
+        <div className="text-center mb-12">
+          <div className="flex justify-center mb-6">
+             <div className="bg-yellow-400 p-4 rounded-[32px] shadow-xl shadow-yellow-100 border-4 border-slate-900 animate-bounce-slow">
+               <Smile size={64} className="text-slate-900 fill-yellow-400" strokeWidth={2.5} />
+             </div>
+          </div>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tighter">乐贝色彩</h2>
+          <p className="text-slate-500 mt-2 font-bold tracking-[0.2em] text-xs uppercase">
+            {isSettingInitial ? '初始化管理员密码' : '学员课时管家 - 管理端'}
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="relative">
+            <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-2">
+              {isSettingInitial ? '设置新管理密码' : '请输入访问密码'}
+            </label>
+            <div className="relative group">
+              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-yellow-500 transition-colors">
+                <Lock size={20} />
+              </div>
+              <input 
+                autoFocus
+                type={showPassword ? 'text' : 'password'}
+                className={`w-full pl-14 pr-14 py-5 bg-slate-100/50 border-2 rounded-[24px] outline-none transition-all font-bold text-slate-800 ${
+                  error ? 'border-red-400 bg-red-50' : 'border-transparent focus:border-yellow-400 focus:bg-white focus:shadow-xl focus:shadow-yellow-50'
+                }`}
+                placeholder={isSettingInitial ? '新密码（至少6位）' : '登录密码'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            {error && <p className="text-red-500 text-[10px] font-black mt-2 ml-2 tracking-widest uppercase">密码错误，请重新输入！</p>}
+          </div>
+
+          <button 
+            type="submit"
+            className="w-full py-5 bg-slate-900 text-white font-black rounded-[24px] hover:bg-black transition-all shadow-2xl shadow-slate-200 active:scale-[0.97] tracking-widest uppercase"
+          >
+            {isSettingInitial ? '开始体验' : '登 录'}
+          </button>
+        </form>
+
+        <div className="mt-12 pt-8 border-t border-slate-100 text-center">
+          <div className="flex items-center justify-center gap-2 grayscale opacity-40">
+            <AppLogo showText={false} />
+            <span className="text-[10px] font-bold tracking-widest">乐贝色彩安全中心提供保护</span>
+          </div>
+        </div>
+      </div>
+      
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-8px); }
+          75% { transform: translateX(8px); }
+        }
+        .animate-shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        .animate-bounce-slow { animation: bounce-slow 2s infinite ease-in-out; }
+      `}</style>
+    </div>
+  );
+};
+
+// --- 成长档案组件 ---
 
 const ArchiveModal = ({
   student,
@@ -697,11 +858,10 @@ const ArchiveModal = ({
     if (toDownload.length === 0) return;
 
     images.filter(img => toDownload.includes(img.id)).forEach((img, idx) => {
-      // Small timeout to prevent browser blocking multiple downloads
       setTimeout(() => {
         const link = document.createElement('a');
         link.href = img.url;
-        link.download = img.name || `student-archive-${img.id}.png`;
+        link.download = img.name || `学员作品-${img.id}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -720,12 +880,12 @@ const ArchiveModal = ({
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
-      <div className="bg-white rounded-[32px] w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-        {/* Header */}
+      <div className="bg-white rounded-[32px] w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        {/* 页眉 */}
         <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
           <div>
             <h3 className="text-xl font-bold text-slate-800">成长档案：{student.name}</h3>
-            <p className="text-sm text-slate-500">记录每一次精彩瞬间 • {images.length} 张作品</p>
+            <p className="text-sm text-slate-500">记录每一次精彩瞬间 • 累计 {images.length} 张作品</p>
           </div>
           <div className="flex items-center gap-2">
             {!isSelectMode ? (
@@ -734,11 +894,11 @@ const ArchiveModal = ({
                   onClick={() => setIsSelectMode(true)}
                   className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition"
                 >
-                  管理档案
+                  管理作品
                 </button>
                 <button 
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition shadow-md"
+                  className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-800 transition shadow-md"
                 >
                   <UploadCloud size={18} />
                   <span>批量上传</span>
@@ -769,7 +929,7 @@ const ArchiveModal = ({
                   className="flex items-center gap-2 bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-red-100 transition disabled:opacity-50"
                 >
                   <Trash2 size={18} />
-                  <span>批量删除</span>
+                  <span>删除已选 ({selectedIds.length})</span>
                 </button>
               </>
             )}
@@ -785,15 +945,14 @@ const ArchiveModal = ({
           accept="image/*" 
           className="hidden" 
           ref={fileInputRef}
-          // Fix: Explicitly type event and cast Array.from result to File[] to fix unknown[] type error
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             const files = Array.from(e.target.files || []) as File[];
             if (files.length > 0) onUpload(student.id, files);
-            e.target.value = ''; // Reset
+            e.target.value = ''; 
           }}
         />
 
-        {/* Content Area */}
+        {/* 内容展示区 */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30">
           {images.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -801,7 +960,7 @@ const ArchiveModal = ({
                 <div 
                   key={img.id} 
                   className={`relative group rounded-2xl overflow-hidden aspect-square border-2 transition-all cursor-pointer ${
-                    selectedIds.includes(img.id) ? 'border-blue-500 ring-4 ring-blue-50' : 'border-white hover:border-blue-200'
+                    selectedIds.includes(img.id) ? 'border-yellow-400 ring-4 ring-yellow-50' : 'border-white hover:border-yellow-200'
                   }`}
                   onClick={() => isSelectMode && toggleSelect(img.id)}
                 >
@@ -811,11 +970,11 @@ const ArchiveModal = ({
                     className="w-full h-full object-cover"
                   />
                   
-                  {/* Selection Overlay */}
+                  {/* 选择状态覆盖层 */}
                   {isSelectMode ? (
                     <div className="absolute top-2 right-2 z-10">
                       {selectedIds.includes(img.id) ? (
-                        <CheckCircle2 size={24} className="text-blue-500 fill-white" />
+                        <CheckCircle2 size={24} className="text-yellow-500 fill-white" />
                       ) : (
                         <Circle size={24} className="text-white/80" />
                       )}
@@ -837,7 +996,7 @@ const ArchiveModal = ({
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          onDelete([img.id]);
+                          if(confirm('确定要删除这张作品吗？')) onDelete([img.id]);
                         }}
                         className="p-2 bg-red-500/20 backdrop-blur-md rounded-full text-white hover:bg-red-500/60 transition"
                       >
@@ -859,28 +1018,23 @@ const ArchiveModal = ({
               <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
                 <ImageIcon size={48} className="opacity-20" />
               </div>
-              <h4 className="text-lg font-semibold text-slate-600 mb-2">空空如也的相册</h4>
-              <p className="text-sm max-w-xs text-center mb-8">点击“批量上传”按钮，开始记录学员在乐贝色彩的艺术创作历程吧！</p>
+              <h4 className="text-lg font-semibold text-slate-600 mb-2">相册空空如也</h4>
+              <p className="text-sm max-w-xs text-center mb-8">点击“批量上传”按钮，开始记录学员在乐贝色彩的每一次艺术创作吧！</p>
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-100"
+                className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-bold hover:bg-black transition shadow-lg shadow-slate-100"
               >
-                立即上传第一张作品
+                上传第一张作品
               </button>
             </div>
           )}
         </div>
-        
-        {/* Footer info */}
-        {images.length > 0 && !isSelectMode && (
-          <div className="px-6 py-4 bg-white border-t border-slate-100 text-center">
-             <p className="text-xs text-slate-400">点击图片右上角下载单张作品，或点击“管理档案”进行批量操作</p>
-          </div>
-        )}
       </div>
     </div>
   );
 };
+
+// --- 评价管理弹窗 ---
 
 const ReviewModal = ({ 
   student, 
@@ -906,11 +1060,11 @@ const ReviewModal = ({
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
-      <div className="bg-white rounded-[32px] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-        {/* Header */}
+      <div className="bg-white rounded-[32px] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        {/* 页眉 */}
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
-            <h3 className="text-xl font-bold text-slate-800">成长记录：{student.name}</h3>
+            <h3 className="text-xl font-bold text-slate-800">教学记录：{student.name}</h3>
             <p className="text-sm text-slate-500">累计评价：{reviews.length} 条</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition">
@@ -919,14 +1073,14 @@ const ReviewModal = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          {/* New Review Form */}
+          {/* 新增点评表单 */}
           <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100">
             <h4 className="text-sm font-bold text-amber-800 mb-4 flex items-center gap-2">
               <Award size={16} /> 新增教学点评
             </h4>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-amber-700">教学评分：</span>
+                <span className="text-sm text-amber-700">课堂评分：</span>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button 
@@ -945,7 +1099,7 @@ const ReviewModal = ({
               </div>
               <textarea 
                 required
-                placeholder="记录今天学员的表现，例如：掌握了新技巧、练习非常认真..."
+                placeholder="记录今天学员的表现，例如：作品构图新颖、调色非常有创意、练习态度非常认真..."
                 className="w-full p-4 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none resize-none min-h-[100px] text-sm"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -954,12 +1108,12 @@ const ReviewModal = ({
                 type="submit"
                 className="w-full py-3 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 transition shadow-lg shadow-amber-200"
               >
-                发布点评
+                发布课堂点评
               </button>
             </form>
           </div>
 
-          {/* Review History */}
+          {/* 评价历史记录 */}
           <div className="space-y-4">
             <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
               <History size={16} /> 评价历史
@@ -1005,8 +1159,8 @@ const ReviewModal = ({
 const NavItem = ({ active, onClick, icon, label, badge }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, badge?: number }) => (
   <button 
     onClick={onClick}
-    className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition font-medium ${
-      active ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+    className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition font-black uppercase text-[11px] tracking-widest ${
+      active ? 'bg-yellow-400 text-slate-900 shadow-md shadow-yellow-100' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'
     }`}
   >
     <div className="flex items-center gap-3">
@@ -1025,7 +1179,7 @@ const MobileNavItem = ({ active, onClick, icon, label, badge }: { active: boolea
   <button 
     onClick={onClick}
     className={`flex flex-col items-center gap-1 flex-1 transition-all relative ${
-      active ? 'text-blue-600' : 'text-slate-400'
+      active ? 'text-yellow-600' : 'text-slate-400'
     }`}
   >
     <div className="relative">
@@ -1036,18 +1190,18 @@ const MobileNavItem = ({ active, onClick, icon, label, badge }: { active: boolea
         </span>
       )}
     </div>
-    <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+    <span className="text-[10px] font-black uppercase tracking-wider">{label}</span>
   </button>
 );
 
 const StatCard = ({ icon, label, value, color }: { icon: React.ReactNode, label: string, value: number, color: string }) => (
-  <div className={`bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 transition-all ${color === 'red' && value > 0 ? 'ring-2 ring-red-100 border-red-200' : ''}`}>
+  <div className={`bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 transition-all hover:shadow-md ${color === 'red' && value > 0 ? 'ring-2 ring-red-100 border-red-200' : ''}`}>
     <div className={`p-3 rounded-xl bg-${color === 'slate' ? 'slate' : color}-50`}>
       {icon}
     </div>
     <div>
-      <p className="text-xs text-slate-400 font-medium uppercase">{label}</p>
-      <p className={`text-2xl font-bold ${color === 'red' && value > 0 ? 'text-red-600' : 'text-slate-800'}`}>{value}</p>
+      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{label}</p>
+      <p className={`text-2xl font-black ${color === 'red' && value > 0 ? 'text-red-600' : 'text-slate-800'}`}>{value}</p>
     </div>
   </div>
 );
