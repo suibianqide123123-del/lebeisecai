@@ -78,23 +78,48 @@ interface Student {
   joinDate: number;
 }
 
-// --- 品牌组件 ---
+// --- 1:1 复刻品牌 Logo 组件 ---
 
-const AppLogo = ({ showText = true, className = "" }: { showText?: boolean, className?: string }) => (
-  <div className={`flex items-center gap-3 ${className}`}>
-    <div className="relative group">
-      <div className="bg-yellow-400 p-1.5 rounded-full shadow-lg border-2 border-slate-900 transition-transform group-hover:scale-110">
-        <Smile size={28} className="text-slate-900 fill-yellow-400" strokeWidth={2.5} />
-      </div>
+const AppLogo = ({ showText = true, size = "md", className = "" }: { showText?: boolean, size?: "sm" | "md" | "lg", className?: string }) => {
+  const smileySize = size === "lg" ? 100 : size === "md" ? 44 : 32;
+  
+  return (
+    <div className={`flex flex-col items-center gap-2 ${className}`}>
+      {/* 1:1 复刻笑脸图形 */}
+      <svg 
+        width={smileySize} 
+        height={smileySize} 
+        viewBox="0 0 100 100" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+        className="drop-shadow-sm"
+      >
+        <circle cx="50" cy="50" r="48" fill="#FACC15" stroke="black" strokeWidth="3"/>
+        {/* 椭圆眼睛 */}
+        <ellipse cx="36" cy="40" rx="3.5" ry="7" fill="black"/>
+        <ellipse cx="64" cy="40" rx="3.5" ry="7" fill="black"/>
+        {/* 经典的带弧度笑脸嘴巴，含小酒窝末端 */}
+        <path 
+          d="M28 60C32 72 68 72 72 60" 
+          stroke="black" 
+          strokeWidth="4" 
+          strokeLinecap="round"
+        />
+        {/* 左酒窝细节 */}
+        <path d="M25 58C26 58 29 60 29 62" stroke="black" strokeWidth="4" strokeLinecap="round"/>
+        {/* 右酒窝细节 */}
+        <path d="M75 58C74 58 71 60 71 62" stroke="black" strokeWidth="4" strokeLinecap="round"/>
+      </svg>
+      
+      {showText && (
+        <div className="flex flex-col items-center leading-none mt-1">
+          <span className={`font-black text-slate-900 tracking-tight ${size === "lg" ? "text-4xl" : "text-xl"}`}>乐贝色彩</span>
+          <span className={`font-bold text-slate-900 tracking-[0.3em] uppercase ${size === "lg" ? "text-sm mt-1" : "text-[8px] mt-0.5"}`}>SMILEY ART</span>
+        </div>
+      )}
     </div>
-    {showText && (
-      <div className="flex flex-col leading-none">
-        <span className="text-xl font-black text-slate-900 tracking-tight">乐贝色彩</span>
-        <span className="text-[9px] font-bold text-slate-500 tracking-[0.2em] uppercase">笑脸艺术中心</span>
-      </div>
-    )}
-  </div>
-);
+  );
+};
 
 // --- 应用程序主组件 ---
 
@@ -277,9 +302,9 @@ const App = () => {
     <div className="min-h-screen pb-20 md:pb-0 md:pl-64 flex flex-col bg-slate-50 animate-in fade-in duration-500">
       
       {/* --- 侧边栏 (桌面端) --- */}
-      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 p-6">
-        <div className="mb-10 pl-2">
-          <AppLogo />
+      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 p-6 overflow-y-auto">
+        <div className="mb-10 px-2">
+          <AppLogo className="items-start" />
         </div>
         
         <nav className="flex flex-col gap-2 flex-1">
@@ -306,10 +331,10 @@ const App = () => {
 
         <button 
           onClick={handleLogout}
-          className="mt-auto flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition font-medium"
+          className="mt-8 flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition font-medium border border-transparent hover:border-red-100"
         >
           <LogOut size={20} />
-          <span>退出登录</span>
+          <span>退出系统</span>
         </button>
       </aside>
 
@@ -339,7 +364,7 @@ const App = () => {
               </div>
               <button 
                 onClick={() => setIsAddingStudent(true)}
-                className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-slate-800 transition shadow-md shadow-slate-100"
+                className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-black transition shadow-md shadow-slate-200"
               >
                 <UserPlus size={18} />
                 <span>新增学员</span>
@@ -677,7 +702,7 @@ const App = () => {
                 </button>
                 <button 
                   type="submit" 
-                  className="flex-1 py-3 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 shadow-lg shadow-slate-200"
+                  className="flex-1 py-3 rounded-xl bg-slate-900 text-white font-medium hover:bg-black shadow-lg shadow-slate-200"
                 >
                   确认添加
                 </button>
@@ -742,9 +767,9 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-white px-4 relative overflow-hidden">
       {/* 动态背景图案 */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-[0.03]">
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-[0.02]">
         <div className="grid grid-cols-12 gap-4">
           {[...Array(144)].map((_, i) => (
             <Smile key={i} size={48} className="text-slate-900" />
@@ -752,23 +777,21 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
         </div>
       </div>
 
-      <div className={`bg-white/90 backdrop-blur-2xl p-8 md:p-12 rounded-[48px] w-full max-w-md shadow-[0_32px_64px_-12px_rgba(0,0,0,0.1)] relative z-10 transition-transform duration-300 ${error ? 'animate-shake' : ''} border border-white`}>
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-6">
-             <div className="bg-yellow-400 p-4 rounded-[32px] shadow-xl shadow-yellow-100 border-4 border-slate-900 animate-bounce-slow">
-               <Smile size={64} className="text-slate-900 fill-yellow-400" strokeWidth={2.5} />
-             </div>
+      <div className={`bg-white p-8 md:p-12 rounded-[48px] w-full max-w-md shadow-[0_32px_64px_-12px_rgba(0,0,0,0.1)] relative z-10 transition-transform duration-300 ${error ? 'animate-shake' : ''} border border-slate-50`}>
+        <div className="text-center mb-10">
+          <div className="flex justify-center mb-8">
+             <AppLogo size="lg" showText={false} className="animate-bounce-slow" />
           </div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter">乐贝色彩</h2>
-          <p className="text-slate-500 mt-2 font-bold tracking-[0.2em] text-xs uppercase">
-            {isSettingInitial ? '初始化管理员密码' : '学员课时管家 - 管理端'}
+          <p className="text-slate-500 mt-3 font-bold tracking-[0.3em] text-[10px] uppercase">
+            {isSettingInitial ? '初始化管理密码' : 'SMILEY ART MANAGER'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative">
             <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-2">
-              {isSettingInitial ? '设置新管理密码' : '请输入访问密码'}
+              {isSettingInitial ? '设置新管理密码' : '管理员登录'}
             </label>
             <div className="relative group">
               <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-yellow-500 transition-colors">
@@ -777,10 +800,10 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
               <input 
                 autoFocus
                 type={showPassword ? 'text' : 'password'}
-                className={`w-full pl-14 pr-14 py-5 bg-slate-100/50 border-2 rounded-[24px] outline-none transition-all font-bold text-slate-800 ${
+                className={`w-full pl-14 pr-14 py-5 bg-slate-50 border-2 rounded-[24px] outline-none transition-all font-bold text-slate-800 ${
                   error ? 'border-red-400 bg-red-50' : 'border-transparent focus:border-yellow-400 focus:bg-white focus:shadow-xl focus:shadow-yellow-50'
                 }`}
-                placeholder={isSettingInitial ? '新密码（至少6位）' : '登录密码'}
+                placeholder={isSettingInitial ? '新密码（至少6位）' : '请输入访问密码'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -799,14 +822,13 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
             type="submit"
             className="w-full py-5 bg-slate-900 text-white font-black rounded-[24px] hover:bg-black transition-all shadow-2xl shadow-slate-200 active:scale-[0.97] tracking-widest uppercase"
           >
-            {isSettingInitial ? '开始体验' : '登 录'}
+            {isSettingInitial ? '立即启用' : '进入系统'}
           </button>
         </form>
 
         <div className="mt-12 pt-8 border-t border-slate-100 text-center">
           <div className="flex items-center justify-center gap-2 grayscale opacity-40">
-            <AppLogo showText={false} />
-            <span className="text-[10px] font-bold tracking-widest">乐贝色彩安全中心提供保护</span>
+             <span className="text-[10px] font-bold tracking-widest">乐贝色彩安全管理中心</span>
           </div>
         </div>
       </div>
@@ -885,7 +907,7 @@ const ArchiveModal = ({
         <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
           <div>
             <h3 className="text-xl font-bold text-slate-800">成长档案：{student.name}</h3>
-            <p className="text-sm text-slate-500">记录每一次精彩瞬间 • 累计 {images.length} 张作品</p>
+            <p className="text-sm text-slate-500">累计作品 {images.length} 件 • 记录成长点滴</p>
           </div>
           <div className="flex items-center gap-2">
             {!isSelectMode ? (
@@ -898,7 +920,7 @@ const ArchiveModal = ({
                 </button>
                 <button 
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-800 transition shadow-md"
+                  className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-black transition shadow-md"
                 >
                   <UploadCloud size={18} />
                   <span>批量上传</span>
@@ -913,7 +935,7 @@ const ArchiveModal = ({
                   }}
                   className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-800 transition"
                 >
-                  取消选择
+                  取消
                 </button>
                 <button 
                   disabled={selectedIds.length === 0}
@@ -1019,12 +1041,12 @@ const ArchiveModal = ({
                 <ImageIcon size={48} className="opacity-20" />
               </div>
               <h4 className="text-lg font-semibold text-slate-600 mb-2">相册空空如也</h4>
-              <p className="text-sm max-w-xs text-center mb-8">点击“批量上传”按钮，开始记录学员在乐贝色彩的每一次艺术创作吧！</p>
+              <p className="text-sm max-w-xs text-center mb-8">点击“批量上传”按钮，开启学员的艺术探索之旅！</p>
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-bold hover:bg-black transition shadow-lg shadow-slate-100"
               >
-                上传第一张作品
+                上传第一件作品
               </button>
             </div>
           )}
@@ -1064,7 +1086,7 @@ const ReviewModal = ({
         {/* 页眉 */}
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
-            <h3 className="text-xl font-bold text-slate-800">教学记录：{student.name}</h3>
+            <h3 className="text-xl font-bold text-slate-800">课堂点评：{student.name}</h3>
             <p className="text-sm text-slate-500">累计评价：{reviews.length} 条</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition">
@@ -1076,11 +1098,11 @@ const ReviewModal = ({
           {/* 新增点评表单 */}
           <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100">
             <h4 className="text-sm font-bold text-amber-800 mb-4 flex items-center gap-2">
-              <Award size={16} /> 新增教学点评
+              <Award size={16} /> 记录今日课堂表现
             </h4>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-amber-700">课堂评分：</span>
+                <span className="text-sm text-amber-700">课堂表现：</span>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button 
@@ -1099,7 +1121,7 @@ const ReviewModal = ({
               </div>
               <textarea 
                 required
-                placeholder="记录今天学员的表现，例如：作品构图新颖、调色非常有创意、练习态度非常认真..."
+                placeholder="例如：今日构思非常独特，对颜色的搭配有了显著提高，加油！"
                 className="w-full p-4 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none resize-none min-h-[100px] text-sm"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -1145,7 +1167,7 @@ const ReviewModal = ({
               {reviews.length === 0 && (
                 <div className="text-center py-10 text-slate-400 border border-dashed rounded-2xl">
                   <MessageSquare size={32} className="mx-auto mb-2 opacity-10" />
-                  <p className="text-sm">暂无评价记录，开启您的第一次点评吧</p>
+                  <p className="text-sm">暂无评价记录</p>
                 </div>
               )}
             </div>
